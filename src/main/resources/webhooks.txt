@@ -1,0 +1,4 @@
+{"event_id": "evt_101", "event_type": "user.signup", "timestamp": "2026-06-21T07:00:00Z", "payload": {"amount": 4900, "currency": "usd", "user_id": "usr_99"}}
+{"event_id": "evt_102", "event_type": "user.signup", "timestamp": "2026-06-21T07:01:00Z", "payload": {"amount": 0, "currency": "usd", "user_id": "usr_100"}}
+THIS IS MALFORMED GARBAGE LINES TO TEST RESILIENCE
+{"event_id": "evt_103", "event_type": "user.payment", "timestamp": "2026-06-21T07:02:00Z", "payload": {"amount": 1500, "currency": "usd", "user_id": "usr_101"}}

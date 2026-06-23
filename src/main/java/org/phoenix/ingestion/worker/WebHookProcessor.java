@@ -19,29 +19,33 @@ public class WebHookProcessor {
             return ProcessingResult.fail("Received null webhook event container", 0);
         }
 
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
         try {
             validateEvent(event);
 
             var payload = event.payload();
             if (payload.amount() <= 0) {
-                return ProcessingResult.fail("Invalid business data: amount must be greater than zero", System.currentTimeMillis() - startTime);
+                return ProcessingResult.fail("Invalid business data: amount must be greater than zero", elapsedMs(startTime));
             }
 
             long simulatedLatency = ThreadLocalRandom.current().nextLong(50, 151);
             Thread.sleep(simulatedLatency);
 
-            long durationMs = System.currentTimeMillis() - startTime;
+            long durationMs = elapsedMs(startTime);
             return ProcessingResult.success(durationMs);
 
         } catch (ValidationException ex) {
             log.warn("Payload validation failed for event_id [{}]: {}", event.eventId(), ex.getMessage());
-            return ProcessingResult.fail(ex.getMessage(), System.currentTimeMillis() - startTime);
+            return ProcessingResult.fail(ex.getMessage(), elapsedMs(startTime));
 
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
-            return ProcessingResult.fail("Processing thread was interrupted abnormally", System.currentTimeMillis() - startTime);
+            return ProcessingResult.fail("Processing thread was interrupted abnormally", elapsedMs(startTime));
         }
+    }
+
+    private static long elapsedMs(long startNanos) {
+        return (System.nanoTime() - startNanos) / 1_000_000;
     }
 
     private void validateEvent(WebhookEvent event) throws ValidationException {
