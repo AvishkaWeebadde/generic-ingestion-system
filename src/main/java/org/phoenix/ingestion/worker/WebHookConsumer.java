@@ -7,6 +7,7 @@ import org.phoenix.ingestion.model.WebhookEvent;
 import org.phoenix.ingestion.utils.JsonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.util.List;
 
@@ -25,7 +26,7 @@ public class WebHookConsumer {
     public ConsumeSummary consumeAll() {
         int succeeded = 0;
         int failed = 0;
-        while(true) {
+        while (true) {
             List<InboundMessage> messages = source.receive();
 
             if (messages == null || messages.isEmpty()) {
@@ -33,22 +34,29 @@ public class WebHookConsumer {
                 break;
             }
 
-            for(InboundMessage message: messages) {
+            for (InboundMessage message : messages) {
+                MDC.put("message_id", message.id());
                 try {
                     WebhookEvent event = JsonUtil.fromJson(message.body(), WebhookEvent.class);
+                    MDC.put("event_id", event.eventId());
+                    MDC.put("event_type", event.eventType());
+
                     ProcessingResult result = processor.process(event);
 
                     if (result.success()) {
-                        log.info("successfully processed {}", event.eventId());
+                        MDC.put("duration_ms", String.valueOf(result.durationMs()));
+                        log.info("Successfully processed webhook event");
                         source.delete(message);
                         succeeded++;
                     } else {
-                        log.warn("rejected {}: {}", event.eventId(), result.reason());
+                        log.warn("Rejected webhook event. Reason: {}", result.reason());
                         failed++;
                     }
                 } catch (Exception ex) {
-                    log.warn("skipping poison message {}", message.id(), ex);
+                    log.error("Poison message intercepted, skipping", ex);
                     failed++;
+                } finally {
+                    MDC.clear();
                 }
             }
         }
